@@ -11,34 +11,14 @@ const cols = (canvasWidth - cellSpace) / cellSize
 const rows = (canvasHeight - cellSpace) / cellSize
 const state = new Array(cols * rows).fill(-1)
 
-/**
- * Returns rgba CSS string for the color represented by a 32bit int
- * Assumes little-endian byte order
- * Inspired by https://hacks.mozilla.org/2011/12/faster-canvas-pixel-manipulation-with-typed-arrays/
- * @param {int} value 32bit int containing rgba color value of the cell
- */
-function getCssColor(value) {
-    const r = value & 0xff
-    const g = (value >> 8) & 0xff
-    const b = (value >> 16) & 0xff
-    const a = ((value >> 24) & 0xff) / 255
-    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')'
-}
+document.addEventListener('DOMContentLoaded', init)
 
 /**
- * Draws a cell at the given coordinates with the given color
- * @param {int} x      x-coordinate of the cell
- * @param {int} y      y-coordinate of the cell
- * @param {int} color  32bit int containing rgba color value of the cell
+ * Perform initialization tasks
  */
-function drawCell(x, y, color) {
-    ctx.fillStyle = getCssColor(color)
-
-    ctx.fillRect(
-        x * cellSize + cellSpace,
-        y * cellSize + cellSpace,
-        cellWidth,
-        cellWidth)
+function init() {
+    canvas.addEventListener('click', handleCanvasClick)
+    drawWorld(state)
 }
 
 /**
@@ -59,12 +39,33 @@ function drawWorld(cells) {
 }
 
 /**
- * Returns random integer between and including min, max
- * @param {int} min
- * @param {int} max
+ * Draws a cell at the given coordinates with the given color
+ * @param {int} x      x-coordinate of the cell
+ * @param {int} y      y-coordinate of the cell
+ * @param {int} color  32bit int containing rgba color value of the cell
  */
-function randInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1) + min)
+function drawCell(x, y, color) {
+    ctx.fillStyle = getCssColor(color)
+
+    ctx.fillRect(
+        x * cellSize + cellSpace,
+        y * cellSize + cellSpace,
+        cellWidth,
+        cellWidth)
+}
+
+/**
+ * Returns rgba CSS string for the color represented by a 32bit int
+ * Assumes little-endian byte order
+ * Inspired by https://hacks.mozilla.org/2011/12/faster-canvas-pixel-manipulation-with-typed-arrays/
+ * @param {int} value 32bit int containing rgba color value of the cell
+ */
+function getCssColor(value) {
+    const r = value & 0xff
+    const g = (value >> 8) & 0xff
+    const b = (value >> 16) & 0xff
+    const a = ((value >> 24) & 0xff) / 255
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')'
 }
 
 /**
@@ -88,11 +89,10 @@ function handleCanvasClick(e) {
 }
 
 /**
- * Perform initialization tasks
+ * Returns random integer between and including min, max
+ * @param {int} min
+ * @param {int} max
  */
-function init() {
-    canvas.addEventListener('click', handleCanvasClick)
-    drawWorld(state)
+function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min)
 }
-
-document.addEventListener('DOMContentLoaded', init)
