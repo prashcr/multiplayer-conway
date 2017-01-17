@@ -1,5 +1,7 @@
 'use strict'
 
+/* global Primus */
+
 const canvas = document.getElementById('canvas')
 const ctx = canvas.getContext('2d')
 const canvasWidth = canvas.width
@@ -17,6 +19,10 @@ document.addEventListener('DOMContentLoaded', init)
  * Initialize game when the DOM is loaded
  */
 function init() {
+    const primus = new Primus()
+    primus.on('data', (data) => {
+        console.log(data)
+    })
     canvas.addEventListener('click', handleCanvasClick)
     drawWorld(state)
 }
@@ -72,11 +78,10 @@ function getCssColor(value) {
  * Click handler for canvas element
  */
 function handleCanvasClick(e) {
-    console.log('x:' + e.offsetX + ', y:' + e.offsetY)
     let x = e.offsetX
     let y = e.offsetY
 
-    // Adjust click coordinates up and/or left if it falls on spacing
+    // Adjust click coordinates 1px up and/or left if it falls on spacing
     // Because mouse cursors usually point in this direction
     if (x % cellSize === 0) x--
     if (y % cellSize === 0) y--
