@@ -2,4 +2,11 @@
     width: 901px;
     margin: auto;
     text-align: center;
+    /* Double clicking canvas highlights heading otherwise */
+    user-select: none;
+}
+
+#heading {
+    color: #333333;
+    font-family: 'Trebuchet MS', Helvetica, sans-serif;
 }
