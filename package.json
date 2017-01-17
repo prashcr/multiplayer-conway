@@ -1,20 +1,23 @@
 {
   "name": "multiplayer-conway",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "test": "test"
-  },
+  "description": "A multiplayer Game of Life implementation",
+  "author": "Prashanth Chandra",
+  "license": "ISC",
   "scripts": {
+    "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "eslint": "^3.13.1",
     "eslint-config-airbnb-base": "^11.0.1",
     "eslint-plugin-import": "^2.2.0"
+  },
+  "dependencies": {
+    "ejs": "^2.5.5",
+    "express": "^4.14.0",
+    "morgan": "^1.7.0",
+    "primus": "^6.0.8",
+    "uws": "^0.12.0"
   }
 }

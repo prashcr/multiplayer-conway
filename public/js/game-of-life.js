@@ -14,7 +14,7 @@ const state = new Array(cols * rows).fill(-1)
 document.addEventListener('DOMContentLoaded', init)
 
 /**
- * Perform initialization tasks
+ * Initialize game when the DOM is loaded
  */
 function init() {
     canvas.addEventListener('click', handleCanvasClick)
