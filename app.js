@@ -27,8 +27,17 @@ primus.save(path.join(__dirname, 'public/js/primus.js'))
  * Configure Express server
  */
 app.set('port', process.env.PORT || 3000)
+app.set('views', path.join(__dirname, 'views'))
+app.set('view engine', 'ejs')
 app.use(logger('dev'))
 app.use(express.static(path.join(__dirname, 'public')))
+
+/**
+ * Express routes
+ */
+app.get('/', (req, res) => {
+    res.render('index')
+})
 
 /**
  * Primus listeners
