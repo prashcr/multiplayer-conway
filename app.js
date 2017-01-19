@@ -5,6 +5,10 @@ const http = require('http')
 const path = require('path')
 const logger = require('morgan')
 const Primus = require('primus')
+/**
+ * Controllers (route handlers and event listeners)
+ */
+const gameController = require('./controllers/game')
 
 /**
  * Create Express server and Primus instance
@@ -29,13 +33,8 @@ app.use(express.static(path.join(__dirname, 'public')))
 /**
  * Primus listeners
  */
-primus.on('connection', (spark) => {
-    spark.write('Connected to server')
-})
-
-primus.on('error', (err) => {
-    console.error(err.stack)
-})
+primus.on('connection', gameController.connection)
+primus.on('error', gameController.error)
 
 /**
  * Start Express server
