@@ -1,3 +1,7 @@
+/**
+ * Front-end game logic
+ */
+
 'use strict'
 
 /* global Primus */
@@ -30,6 +34,7 @@ function init() {
 /**
  * Draws the world by iterating through each cell
  * Sets a light grey background which in tandem with cell spacing forms a grid
+ *
  * @param {int[]} cells cols x rows array of 32bit ints containing rgba color for each cell
  */
 function drawWorld(cells) {
@@ -46,6 +51,7 @@ function drawWorld(cells) {
 
 /**
  * Draws a cell at the given coordinates with the given color
+ *
  * @param {int} x      x-coordinate of the cell
  * @param {int} y      y-coordinate of the cell
  * @param {int} color  32bit int containing rgba color value of the cell
@@ -64,6 +70,7 @@ function drawCell(x, y, color) {
  * Returns rgba CSS string for the color represented by a 32bit int
  * Assumes little-endian byte order
  * Inspired by https://hacks.mozilla.org/2011/12/faster-canvas-pixel-manipulation-with-typed-arrays/
+ *
  * @param {int} value 32bit int containing rgba color value of the cell
  */
 function getCssColor(value) {
@@ -95,6 +102,7 @@ function handleCanvasClick(e) {
 
 /**
  * Returns random integer between and including min, max
+ *
  * @param {int} min
  * @param {int} max
  */
