@@ -37,16 +37,11 @@ app.use(session)
  * Configure Primus
  */
 const primus = new Primus(server, {
-    pathname: '/gameserver',
     transformer: 'websockets',
 })
 
 primus.use('session', session)
 primus.plugin('emit', primusEmit)
-
-// Regenerates and saves client-side library according to configuration above
-// Should be minified and served from a CDN in production but this is convenient for development
-primus.save(path.join(__dirname, 'public/js/primus.js'))
 
 /**
  * Express routes
