@@ -6,119 +6,115 @@
 
 /* global Primus */
 
-const canvas = document.getElementById('canvas')
-const ctx = canvas.getContext('2d')
-const canvasWidth = canvas.width
-const canvasHeight = canvas.height
-const cellWidth = 5
-const cellSpace = 1
-const cellSize = cellWidth + cellSpace
-const cols = (canvasWidth - cellSpace) / cellSize
-const rows = (canvasHeight - cellSpace) / cellSize
-const primus = new Primus()
+;(() => {
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d')
+    const canvasWidth = canvas.width // 901
+    const canvasHeight = canvas.height // 601
+    const cellWidth = 5
+    const cellSpace = 1
+    const cellSize = cellWidth + cellSpace
+    const cols = (canvasWidth - cellSpace) / cellSize // 150
+    const rows = (canvasHeight - cellSpace) / cellSize // 100
+    const primus = new Primus()
 
-document.addEventListener('DOMContentLoaded', init)
+    document.addEventListener('DOMContentLoaded', init)
 
-/**
- * Initialize game when the DOM is loaded
- */
-function init() {
-    primus.on('open', () => {
-        console.log('Connected to server')
-        canvas.addEventListener('click', handleCanvasClick)
+    /**
+     * Initialize game when the DOM is loaded
+     */
+    function init() {
+        /**
+         * When client connects to the server
+         */
+        primus.on('open', () => {
+            console.log('Connected to server')
+            canvas.addEventListener('click', handleCanvasClick)
+        })
 
-        primus.emit('hello', 123)
-    })
+        /**
+         * When new game state is received from the server
+         */
+        primus.on('game::state', (gameState) => {
+            console.log(`Received new game state from server at ${new Date()}`)
+            drawWorld(gameState)
+        })
 
-    primus.on('game::state', (gameState) => {
-        console.log('Received new game state from server')
-        console.log(gameState)
-        drawWorld(gameState)
-    })
+        /**
+         * When player's color is received from the server
+         */
+        primus.on('game::player::color', (color) => {
+            console.log('Recieved player color from server')
+            console.log('%c    ', `background: ${color}`)
+        })
+    }
 
-    primus.on('game::player::color', (color) => {
-        console.log('Received player color from server')
-        console.log(color)
-    })
-}
+    /**
+     * Draws the world by iterating through each cell
+     * Sets a light grey background which in tandem with cell spacing forms a grid
+     *
+     * @param {Integer32[]} cells cols * rows array of 32bit ints
+     * containing rgba color for each cell
+     */
+    function drawWorld(cells) {
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+        ctx.fillStyle = 'rgba(24, 24, 24, 0.15)'
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight)
 
-/**
- * Draws the world by iterating through each cell
- * Sets a light grey background which in tandem with cell spacing forms a grid
- *
- * @param {int[]} cells cols x rows array of 32bit ints containing rgba color for each cell
- */
-function drawWorld(cells) {
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight)
-    ctx.fillStyle = 'rgba(24, 24, 24, 0.15)'
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight)
-
-    for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-            drawCell(x, y, cells[cols * y + x])
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+                drawCell(x, y, cells[cols * y + x])
+            }
         }
     }
-}
 
-/**
- * Draws a cell at the given coordinates with the given color
- *
- * @param {int} x      x-coordinate of the cell
- * @param {int} y      y-coordinate of the cell
- * @param {int} color  32bit int containing rgba color value of the cell
- */
-function drawCell(x, y, color) {
-    ctx.fillStyle = getCssColor(color)
+    /**
+     * Draws a cell at the given coordinates with the given color
+     *
+     * @param {Integer} x      x-coordinate of the cell
+     * @param {Integer} y      y-coordinate of the cell
+     * @param {Integer} color  32bit int containing rgba color value of the cell
+     */
+    function drawCell(x, y, color) {
+        ctx.fillStyle = integerToRgba(color)
 
-    ctx.fillRect(
-        x * cellSize + cellSpace,
-        y * cellSize + cellSpace,
-        cellWidth,
-        cellWidth)
-}
+        ctx.fillRect(
+            x * cellSize + cellSpace,
+            y * cellSize + cellSpace,
+            cellWidth,
+            cellWidth)
+    }
 
-/**
- * Returns rgba CSS string for the color represented by a 32bit int
- * Assumes little-endian byte order
- * Inspired by https://hacks.mozilla.org/2011/12/faster-canvas-pixel-manipulation-with-typed-arrays/
- *
- * @param {int} value 32bit int containing rgba color value of the cell
- */
-function getCssColor(value) {
-    const r = value & 0xff
-    const g = (value >> 8) & 0xff
-    const b = (value >> 16) & 0xff
-    const a = ((value >> 24) & 0xff) / 255
-    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')'
-}
+    /**
+     * Returns rgba CSS string for the color represented by a 32bit int
+     * Assumes little-endian byte order
+     * Inspired by https://hacks.mozilla.org/2011/12/faster-canvas-pixel-manipulation-with-typed-arrays/
+     *
+     * @param {Integer32} value 32bit int containing rgba color value of the cell
+     */
+    function integerToRgba(value) {
+        const r = value & 0xff
+        const g = (value >> 8) & 0xff
+        const b = (value >> 16) & 0xff
+        const a = ((value >> 24) & 0xff) / 255
+        return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')'
+    }
 
-/**
- * Click handler for canvas element
- */
-function handleCanvasClick(e) {
-    let x = e.offsetX
-    let y = e.offsetY
+    /**
+     * Click handler for canvas element
+     */
+    function handleCanvasClick(e) {
+        let x = e.offsetX
+        let y = e.offsetY
 
-    // Adjust click coordinates 1px up and/or left if it falls on spacing
-    // Because mouse cursors usually point in this direction
-    if (x % cellSize === 0) x--
-    if (y % cellSize === 0) y--
+        // Adjust click coordinates 1px up and/or left if it falls on spacing
+        // Because mouse cursors usually point in this direction
+        if (x % cellSize === 0) x--
+        if (y % cellSize === 0) y--
 
-    x = Math.floor(x / cellSize)
-    y = Math.floor(y / cellSize)
+        x = Math.floor(x / cellSize)
+        y = Math.floor(y / cellSize)
 
-    console.log('Player clicked')
-    console.log('x: ' + x + ', y: ' + y)
-
-    primus.emit('game::player::click', 'hi')
-}
-
-/**
- * Returns random integer between and including min, max
- *
- * @param {int} min
- * @param {int} max
- */
-function randInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1) + min)
-}
+        primus.emit('game::player::click', { x, y })
+    }
+})()

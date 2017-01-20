@@ -24,37 +24,65 @@ const cols = 150
 const rows = 100
 const gameState = new Array(cols * rows).fill(-1) // fill with white
 
-/**
- * When a new connection is received
- */
-exports.connection = (spark) => {
-    const req = spark.request
+module.exports = (primus) => {
+    setInterval(worldTick, 1000)
 
-    if (!req.session.color) {
-        req.session.color = randomColor({
-            format: 'rgba',
-            alpha: 1,
-        })
-        req.session.save()
+    return {
+        connection,
+        error,
     }
 
-    spark.emit('game::player::color', req.session.color)
-    spark.emit('game::state', gameState)
+    /**
+     * When a new connection is received
+     */
+    function connection(spark) {
+        const req = spark.request
+
+        if (!req.session.color) {
+            req.session.color = randomColor({ format: 'rgb' })
+            req.session.save()
+        }
+        const integerColor = rgbaToInteger(req.session.color)
+
+        spark.emit('game::player::color', req.session.color)
+        spark.emit('game::state', gameState)
+
+        /**
+         * When a player clicks on the canvas
+         */
+        spark.on('game::player::click', ({ x, y }) => {
+            gameState[cols * y + x] = integerColor
+            primus.forEach(eachSpark => eachSpark.emit('game::state', gameState))
+        })
+    }
+
+    /**
+     * When an error occurs
+     */
+    function error(err) {
+        console.error(err.stack)
+    }
+
+    /**
+     * Runs Game of Life algorithm every X milliseconds
+     */
+    function worldTick() {
+        // TODO Game of Life logic
+    }
 }
 
 /**
- * When an error occurs
+ * Takes an rgb(a) CSS string and returns it as an integer
+ *  @param {String} rgba CSS color either in rgb or rgba format
  */
-exports.error = (err) => {
-    console.error(err.stack)
-}
+function rgbaToInteger(rgba) {
+    const startIndex = rgba[3] === 'a' ? 5 : 4
+    const values = rgba.slice(startIndex, -1).split(',').map(n => parseInt(n, 10))
+    const [r, g, b] = values
+    const a = values[3] ? Math.round(values[3] * 255) : 255
 
-exports.player = {}
-
-/**
- * When a player clicks on the canvas
- */
-exports.player.click = () => {
-    console.log('Player clicked')
-    // console.log('x: ' + x + ', y: ' + y)
+    return (a << 24) |
+           (b << 16) |
+           (g << 8) |
+           r
 }

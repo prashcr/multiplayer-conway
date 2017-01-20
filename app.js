@@ -9,12 +9,6 @@ const expressSession = require('express-session')
 const primusEmit = require('primus-emit')
 
 /**
- * Controllers (route handlers and event listeners)
- */
-const homeController = require('./controllers/home')
-const gameController = require('./controllers/game')
-
-/**
  * Configure Express server
  */
 const app = express()
@@ -44,6 +38,12 @@ primus.use('session', session)
 primus.plugin('emit', primusEmit)
 
 /**
+ * Controllers (route handlers and event listeners)
+ */
+const homeController = require('./controllers/home')
+const gameController = require('./controllers/game')(primus)
+
+/**
  * Express routes
  */
 app.get('/', homeController.index)
@@ -53,8 +53,6 @@ app.get('/', homeController.index)
  */
 primus.on('connection', gameController.connection)
 primus.on('error', gameController.error)
-primus.on('game::player::click', gameController.player.click)
-primus.on('hello', msg => console.log(msg))
 
 /**
  * Start Express server
