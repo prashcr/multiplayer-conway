@@ -15,7 +15,7 @@ const cellSpace = 1
 const cellSize = cellWidth + cellSpace
 const cols = (canvasWidth - cellSpace) / cellSize
 const rows = (canvasHeight - cellSpace) / cellSize
-const state = new Array(cols * rows).fill(-1)
+const primus = new Primus()
 
 document.addEventListener('DOMContentLoaded', init)
 
@@ -23,12 +23,23 @@ document.addEventListener('DOMContentLoaded', init)
  * Initialize game when the DOM is loaded
  */
 function init() {
-    const primus = new Primus()
-    primus.on('data', (data) => {
-        console.log(data)
+    primus.on('open', () => {
+        console.log('Connected to server')
+        canvas.addEventListener('click', handleCanvasClick)
+
+        primus.emit('hello', 123)
     })
-    canvas.addEventListener('click', handleCanvasClick)
-    drawWorld(state)
+
+    primus.on('game::state', (gameState) => {
+        console.log('Received new game state from server')
+        console.log(gameState)
+        drawWorld(gameState)
+    })
+
+    primus.on('game::player::color', (color) => {
+        console.log('Received player color from server')
+        console.log(color)
+    })
 }
 
 /**
@@ -96,8 +107,10 @@ function handleCanvasClick(e) {
     x = Math.floor(x / cellSize)
     y = Math.floor(y / cellSize)
 
-    state[cols * y + x] = -2147483393
-    drawWorld(state)
+    console.log('Player clicked')
+    console.log('x: ' + x + ', y: ' + y)
+
+    primus.emit('game::player::click', 'hi')
 }
 
 /**

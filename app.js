@@ -6,6 +6,7 @@ const path = require('path')
 const logger = require('morgan')
 const Primus = require('primus')
 const expressSession = require('express-session')
+const primusEmit = require('primus-emit')
 
 /**
  * Controllers (route handlers and event listeners)
@@ -41,6 +42,7 @@ const primus = new Primus(server, {
 })
 
 primus.use('session', session)
+primus.plugin('emit', primusEmit)
 
 // Regenerates and saves client-side library according to configuration above
 // Should be minified and served from a CDN in production but this is convenient for development
@@ -56,6 +58,8 @@ app.get('/', homeController.index)
  */
 primus.on('connection', gameController.connection)
 primus.on('error', gameController.error)
+primus.on('game::player::click', gameController.player.click)
+primus.on('hello', msg => console.log(msg))
 
 /**
  * Start Express server

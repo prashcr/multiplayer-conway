@@ -3327,6 +3327,42 @@ if (
 module.exports = Primus;
 
 },{"demolish":1,"emits":2,"eventemitter3":3,"inherits":4,"querystringify":7,"recovery":8,"tick-tock":11,"url-parse":12,"yeast":14}]},{},[15])(15);
+Primus.prototype.ark["emit"] = function client(primus) {
+  var toString = Object.prototype.toString
+    , emit = primus.emit;
+
+  primus.transform('incoming', function incoming(packet) {
+    var data = packet.data;
+
+    if (
+         this !== primus                                // Incorrect context.
+      || 'object' !== typeof data                       // Events are objects.
+      || !~toString.call(data.emit).indexOf(' Array]')  // Not an emit object.
+    ) {
+      return;
+    }
+
+    //
+    // Check if we've received an event that is already used internally.
+    // We use our previously saved `emit` function to emit the event so we
+    // prevent recursion and message flood.
+    //
+    if (!this.reserved(data.emit[0])) emit.apply(primus, data.emit);
+
+    return false;
+  });
+
+  primus.emit = function emitter(event) {
+    if (
+         primus.reserved(event)
+      || 'newListener' === event
+      || 'removeListener' === event
+    ) return emit.apply(this, arguments);
+
+    primus.write({ emit: Array.prototype.slice.call(arguments, 0) });
+    return true;
+  };
+};
   return Primus;
 },
 [
