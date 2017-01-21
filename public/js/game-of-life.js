@@ -45,6 +45,7 @@
          */
         primus.on('game::player::color', (color) => {
             console.log('Recieved player color from server')
+            console.log(color)
             console.log('%c    ', `background: ${color}`)
         })
     }
@@ -53,12 +54,11 @@
      * Draws the world by iterating through each cell
      * Sets a light grey background which in tandem with cell spacing forms a grid
      *
-     * @param {Integer32[]} cells cols * rows array of 32bit ints
-     * containing rgba color for each cell
+     * @param {Number[]} cells cols * rows array of integer colors
      */
     function drawWorld(cells) {
         ctx.clearRect(0, 0, canvasWidth, canvasHeight)
-        ctx.fillStyle = 'rgba(24, 24, 24, 0.15)'
+        ctx.fillStyle = 'rgba(128, 128, 128, 0.15)'
         ctx.fillRect(0, 0, canvasWidth, canvasHeight)
 
         for (let y = 0; y < rows; y++) {
@@ -71,12 +71,13 @@
     /**
      * Draws a cell at the given coordinates with the given color
      *
-     * @param {Integer} x      x-coordinate of the cell
-     * @param {Integer} y      y-coordinate of the cell
-     * @param {Integer} color  32bit int containing rgba color value of the cell
+     * @param {Number} x          integer x-coordinate of the cell
+     * @param {Number} y          integer y-coordinate of the cell
+     * @param {Number} cell       integer color of the cell
      */
-    function drawCell(x, y, color) {
-        ctx.fillStyle = integerToRgba(color)
+    function drawCell(x, y, cell) {
+        const color = integerToRgba(cell)
+        ctx.fillStyle = color
 
         ctx.fillRect(
             x * cellSize + cellSpace,
@@ -86,17 +87,17 @@
     }
 
     /**
-     * Returns rgba CSS string for the color represented by a 32bit int
+     * Returns rgba CSS string for the color represented by least significant 4 bytes of cell value
      * Assumes little-endian byte order
      * Inspired by https://hacks.mozilla.org/2011/12/faster-canvas-pixel-manipulation-with-typed-arrays/
      *
-     * @param {Integer32} value 32bit int containing rgba color value of the cell
+     * @param {Number} integer   integer color of the cell
      */
-    function integerToRgba(value) {
-        const r = value & 0xff
-        const g = (value >> 8) & 0xff
-        const b = (value >> 16) & 0xff
-        const a = ((value >> 24) & 0xff) / 255
+    function integerToRgba(integer) {
+        const r = integer & 0xff
+        const g = (integer >> 8) & 0xff
+        const b = (integer >> 16) & 0xff
+        const a = ((integer >> 24) & 0xff) / 255
         return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')'
     }
 
