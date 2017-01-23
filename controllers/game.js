@@ -45,15 +45,19 @@ const GAME_TICK_INTERVAL = {
 }
 
 /**
- * Game factory to encapsulate game state and its operations
- *
- * @returns {Object} - game object containing functions for game state operations
+ * Game class that encapsulates game state and its operations
  */
-const Game = function Game() {
-    let colors = new Array(COLS * ROWS).fill(COLOR.BLANK)
-    let lives = new Array(COLS * ROWS).fill(LIFE.DEAD)
-    let nextStateColors = new Array(COLS * ROWS).fill(COLOR.BLANK)
-    let nextStateLives = new Array(COLS * ROWS).fill(LIFE.DEAD)
+class Game {
+    constructor() {
+        // integer color values for each cell
+        this.colors = new Array(COLS * ROWS).fill(COLOR.BLANK)
+        // stores whether cell is alive or dead for each cell
+        this.lives = new Array(COLS * ROWS).fill(LIFE.DEAD)
+        // colors data for next state
+        this.nextStateColors = new Array(COLS * ROWS).fill(COLOR.BLANK)
+        // lives data for next state
+        this.nextStateLives = new Array(COLS * ROWS).fill(LIFE.DEAD)
+    }
 
     /**
      * Returns color of cell at x,y
@@ -62,17 +66,8 @@ const Game = function Game() {
      * @param {Number} y - y-coordinate of cell
      * @returns {Number} - integer color of cell at x,y
      */
-    function getColor(x, y) {
-        return colors[COLS * y + x]
-    }
-
-    /**
-     * Returns entire array of colors for all cells
-     *
-     * @returns {Number[]} - integer colors for all cells
-     */
-    function getColors() {
-        return colors
+    getColor(x, y) {
+        return this.colors[COLS * y + x]
     }
 
     /**
@@ -82,8 +77,8 @@ const Game = function Game() {
      * @param {Number} y - y-coordinate of cell
      * @param {Number} color - integer color of cell
      */
-    function setColor(x, y, color) {
-        colors[COLS * y + x] = color
+    setColor(x, y, color) {
+        this.colors[COLS * y + x] = color
     }
 
     /**
@@ -93,8 +88,8 @@ const Game = function Game() {
      * @param {Number} y - y-coordinate of cell
      * @param {Number} color - integer color of cell
      */
-    function setNextStateColor(x, y, color) {
-        nextStateColors[COLS * y + x] = color
+    setNextStateColor(x, y, color) {
+        this.nextStateColors[COLS * y + x] = color
     }
 
     /**
@@ -104,8 +99,8 @@ const Game = function Game() {
      * @param {Number} y - y-coordinate of cell
      * @returns {Number} - life value of cell
      */
-    function getLife(x, y) {
-        return lives[COLS * y + x]
+    getLife(x, y) {
+        return this.lives[COLS * y + x]
     }
 
     /**
@@ -115,8 +110,8 @@ const Game = function Game() {
      * @param {Number} y - y-coordinate of cell
      * @param {Number} life - life value of cell
      */
-    function setLife(x, y, life) {
-        lives[COLS * y + x] = life
+    setLife(x, y, life) {
+        this.lives[COLS * y + x] = life
     }
 
     /**
@@ -126,34 +121,23 @@ const Game = function Game() {
      * @param {Number} y - y-coordinate of cell
      * @param {Number} life - life value of cell
      */
-    function setNextStateLife(x, y, life) {
-        nextStateLives[COLS * y + x] = life
+    setNextStateLife(x, y, life) {
+        this.nextStateLives[COLS * y + x] = life
     }
 
     /**
      * Replaces color and lives states with their corresponding next states
      * Reset next states for colors and lives
      */
-    function goToNextState() {
-        colors = nextStateColors
-        lives = nextStateLives
-        nextStateColors = new Array(COLS * ROWS).fill(COLOR.BLANK)
-        nextStateLives = new Array(COLS * ROWS).fill(LIFE.DEAD)
-    }
-
-    return {
-        getColor,
-        getColors,
-        setColor,
-        setNextStateColor,
-        getLife,
-        setLife,
-        setNextStateLife,
-        goToNextState,
+    goToNextState() {
+        this.colors = this.nextStateColors
+        this.lives = this.nextStateLives
+        this.nextStateColors = new Array(COLS * ROWS).fill(COLOR.BLANK)
+        this.nextStateLives = new Array(COLS * ROWS).fill(LIFE.DEAD)
     }
 }
 
-const game = Game()
+const game = new Game()
 
 // Stores current gameTick() timeoutId
 let gameTickTimeoutId
@@ -174,7 +158,7 @@ module.exports = (primus) => {
         const color = rgbaToInteger(req.session.color)
 
         spark.emit(GAME_EVENT.PLAYER_COLOR, req.session.color)
-        spark.emit(GAME_EVENT.STATE, game.getColors())
+        spark.emit(GAME_EVENT.STATE, game.colors)
 
         spark.on(GAME_EVENT.PLAYER_CLICK, playerClick.bind(null, color))
     }
@@ -196,7 +180,7 @@ module.exports = (primus) => {
             game.setColor(x, y, color)
             game.setLife(x, y, LIFE.ALIVE)
 
-            primus.forEach(spark => spark.emit(GAME_EVENT.STATE, game.getColors()))
+            primus.forEach(spark => spark.emit(GAME_EVENT.STATE, game.colors))
         }
     }
 
@@ -241,7 +225,7 @@ module.exports = (primus) => {
 
         game.goToNextState()
 
-        primus.forEach(spark => spark.emit(GAME_EVENT.STATE, game.getColors()))
+        primus.forEach(spark => spark.emit(GAME_EVENT.STATE, game.colors))
 
         gameTickTimeoutId = setTimeout(gameTick, GAME_TICK_INTERVAL.DEFAULT)
     }
