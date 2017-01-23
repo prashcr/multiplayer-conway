@@ -32,6 +32,7 @@ const GAME_EVENT = {
     STATE: 'game::state',
     PLAYER_COLOR: 'game::player::color',
     PLAYER_CLICK: 'game::player::click',
+    PLAYER_PATTERN: 'game::player::pattern',
 }
 
 const GAME_TICK_INTERVAL = {
@@ -156,6 +157,7 @@ module.exports = (primus) => {
         spark.emit(GAME_EVENT.STATE, game.colors)
 
         spark.on(GAME_EVENT.PLAYER_CLICK, playerClick.bind(null, color))
+        spark.on(GAME_EVENT.PLAYER_PATTERN, playerPattern.bind(null, color))
     }
 
     /**
@@ -175,6 +177,22 @@ module.exports = (primus) => {
             game.setColor(x, y, color)
             game.setLife(x, y, true)
 
+            primus.forEach(spark => spark.emit(GAME_EVENT.STATE, game.colors))
+        }
+    }
+
+    /**
+     * When player clicks on a pattern
+     */
+    function playerPattern(color, pattern) {
+        const draw = {
+            beehive: drawBeehive,
+            toad: drawToad,
+            lwss: drawLwss,
+            glider: drawGlider,
+        }
+        if (draw[pattern]) {
+            draw[pattern](color)
             primus.forEach(spark => spark.emit(GAME_EVENT.STATE, game.colors))
         }
     }
@@ -382,4 +400,130 @@ function countNeighbors(x, y) {
     }
 
     return { count, colors }
+}
+
+/**
+ * Returns a random integer between min (inclusive) and max (inclusive)
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random#Using_Math.random()
+ */
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+/**
+ * Draws a beehive pattern
+ *
+ * @param {Number} color - player's color
+ */
+function drawBeehive(color) {
+    const x = getRandomInt(10, COLS - 10)
+    const y = getRandomInt(10, ROWS - 10)
+
+    game.setColor(x, y - 1, color)
+    game.setLife(x, y - 1, true)
+
+    game.setColor(x - 1, y, color)
+    game.setLife(x - 1, y, true)
+
+    game.setColor(x, y + 1, color)
+    game.setLife(x, y + 1, true)
+
+    game.setColor(x + 1, y - 1, color)
+    game.setLife(x + 1, y - 1, true)
+
+    game.setColor(x + 2, y, color)
+    game.setLife(x + 2, y, true)
+
+    game.setColor(x + 1, y + 1, color)
+    game.setLife(x + 1, y + 1, true)
+}
+
+/**
+ * Draws a toad pattern
+ *
+ * @param {Number} color - player's color
+ */
+function drawToad(color) {
+    const x = getRandomInt(10, COLS - 10)
+    const y = getRandomInt(10, ROWS - 10)
+
+    game.setColor(x, y, color)
+    game.setLife(x, y, true)
+
+    game.setColor(x, y + 1, color)
+    game.setLife(x, y + 1, true)
+
+    game.setColor(x - 1, y + 1, color)
+    game.setLife(x - 1, y + 1, true)
+
+    game.setColor(x + 1, y, color)
+    game.setLife(x + 1, y, true)
+
+    game.setColor(x + 1, y + 1, color)
+    game.setLife(x + 1, y + 1, true)
+
+    game.setColor(x + 2, y, color)
+    game.setLife(x + 2, y, true)
+}
+
+/**
+ * Draws an LWSS pattern
+ *
+ * @param {Number} color - player's color
+ */
+function drawLwss(color) {
+    const x = getRandomInt(10, COLS - 10)
+    const y = getRandomInt(10, ROWS - 10)
+
+    game.setColor(x - 1, y + 1, color)
+    game.setLife(x - 1, y + 1, true)
+
+    game.setColor(x - 1, y + 3, color)
+    game.setLife(x - 1, y + 3, true)
+
+    game.setColor(x, y, color)
+    game.setLife(x, y, true)
+
+    game.setColor(x + 1, y, color)
+    game.setLife(x + 1, y, true)
+
+    game.setColor(x + 2, y, color)
+    game.setLife(x + 2, y, true)
+
+    game.setColor(x + 3, y, color)
+    game.setLife(x + 3, y, true)
+
+    game.setColor(x + 3, y + 1, color)
+    game.setLife(x + 3, y + 1, true)
+
+    game.setColor(x + 3, y + 2, color)
+    game.setLife(x + 3, y + 2, true)
+
+    game.setColor(x + 2, y + 3, color)
+    game.setLife(x + 2, y + 3, true)
+}
+
+/**
+ * Draws a glider pattern
+ *
+ * @param {Number} color - player's color
+ */
+function drawGlider(color) {
+    const x = getRandomInt(10, COLS - 10)
+    const y = getRandomInt(10, ROWS - 10)
+
+    game.setColor(x, y, color)
+    game.setLife(x, y, true)
+
+    game.setColor(x + 1, y, color)
+    game.setLife(x + 1, y, color)
+
+    game.setColor(x + 2, y, color)
+    game.setLife(x + 2, y, true)
+
+    game.setColor(x + 2, y - 1, color)
+    game.setLife(x + 2, y - 1, true)
+
+    game.setColor(x + 1, y - 2, color)
+    game.setLife(x + 1, y - 2, true)
 }

@@ -3,12 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <title>Multiplayer Game of Life</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
     <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
     <div id="container">
         <h1 id="heading">Multiplayer Game of Life</h1>
         <canvas id="canvas" width=901 height=601></canvas>
+        <h3>Patterns<small> (click to draw them at a random location in the world)</small></h3>
+        <div id="patterns">
+            <div>
+                <p>Beehive</p>
+                <img id="beehive" class="pattern-gif" src="https://upload.wikimedia.org/wikipedia/commons/6/67/Game_of_life_beehive.svg" alt="beehive">
+            </div>
+            <div>
+                <p>Toad</p>
+                <img id="toad" class="pattern-gif" src="https://upload.wikimedia.org/wikipedia/commons/1/12/Game_of_life_toad.gif" alt="toad">
+            </div>
+            <div>
+                <p>LWSS</p>
+                <img id="lwss" class="pattern-gif" src="https://upload.wikimedia.org/wikipedia/commons/3/37/Game_of_life_animated_LWSS.gif" alt="LWSS">
+            </div>
+            <div>
+                <p>Glider</p>
+                <img id="glider" class="pattern-gif" src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Game_of_life_animated_glider.gif" alt="Glider">
+            </div>
+        </div>
     </div>
     <script src="/primus/primus.js"></script>
     <script src="js/game-of-life.js"></script>

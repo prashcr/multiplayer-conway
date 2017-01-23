@@ -22,6 +22,7 @@
         STATE: 'game::state',
         PLAYER_COLOR: 'game::player::color',
         PLAYER_CLICK: 'game::player::click',
+        PLAYER_PATTERN: 'game::player::pattern',
     }
 
     document.addEventListener('DOMContentLoaded', init)
@@ -36,6 +37,7 @@
         primus.on('open', () => {
             console.log('Connected to server')
             canvas.addEventListener('click', handleCanvasClick)
+            document.getElementById('patterns').addEventListener('click', handlePatternClick)
         })
 
         /**
@@ -124,5 +126,16 @@
         y = Math.floor(y / CELL_SIZE)
 
         primus.emit(GAME_EVENT.PLAYER_CLICK, { x, y })
+    }
+
+    /**
+     * Click handler for when a pattern is clicked.
+     * Sends the relevant event to the server
+     */
+    function handlePatternClick(e) {
+        const patterns = ['beehive', 'toad', 'lwss', 'glider']
+        if (patterns.includes(e.target.id)) {
+            primus.emit(GAME_EVENT.PLAYER_PATTERN, e.target.id)
+        }
     }
 })()
