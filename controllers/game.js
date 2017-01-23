@@ -50,8 +50,10 @@ const GAME_TICK_INTERVAL = {
  * @returns {Object} - game object containing functions for game state operations
  */
 const Game = function Game() {
-    const colors = new Array(COLS * ROWS).fill(COLOR.BLANK)
+    let colors = new Array(COLS * ROWS).fill(COLOR.BLANK)
     let lives = new Array(COLS * ROWS).fill(LIFE.DEAD)
+    let nextStateColors = new Array(COLS * ROWS).fill(COLOR.BLANK)
+    let nextStateLives = new Array(COLS * ROWS).fill(LIFE.DEAD)
 
     /**
      * Returns color of cell at x,y
@@ -85,6 +87,17 @@ const Game = function Game() {
     }
 
     /**
+     * Sets color of cell at x,y in the next state
+     *
+     * @param {Number} x - x-coordinate of cell
+     * @param {Number} y - y-coordinate of cell
+     * @param {Number} color - integer color of cell
+     */
+    function setNextStateColor(x, y, color) {
+        nextStateColors[COLS * y + x] = color
+    }
+
+    /**
      * Returns life of cell at x,y
      *
      * @param {Number} x - x-coordinate of cell
@@ -107,21 +120,36 @@ const Game = function Game() {
     }
 
     /**
-     * Replaces lives state with a new one
+     * Sets life of cell at x,y in the next state
      *
-     * @param {Number[]} newLivesState - array of life values to replace the current one with
+     * @param {Number} x - x-coordinate of cell
+     * @param {Number} y - y-coordinate of cell
+     * @param {Number} life - life value of cell
      */
-    function setLives(newLivesState) {
-        lives = newLivesState
+    function setNextStateLife(x, y, life) {
+        nextStateLives[COLS * y + x] = life
+    }
+
+    /**
+     * Replaces color and lives states with their corresponding next states
+     * Reset next states for colors and lives
+     */
+    function goToNextState() {
+        colors = nextStateColors
+        lives = nextStateLives
+        nextStateColors = new Array(COLS * ROWS).fill(COLOR.BLANK)
+        nextStateLives = new Array(COLS * ROWS).fill(LIFE.DEAD)
     }
 
     return {
         getColor,
         getColors,
         setColor,
+        setNextStateColor,
         getLife,
         setLife,
-        setLives,
+        setNextStateLife,
+        goToNextState,
     }
 }
 
@@ -178,8 +206,6 @@ module.exports = (primus) => {
      * e.g. pending timeout is reset and longer interval is applied when a player clicks on the game
      */
     function gameTick() {
-        const nextLivesState = new Array(COLS * ROWS).fill(LIFE.DEAD)
-
         for (let y = 0; y < ROWS; y++) {
             for (let x = 0; x < COLS; x++) {
                 const { count, colors } = countNeighbors(x, y)
@@ -187,32 +213,33 @@ module.exports = (primus) => {
                 // Any live cell with fewer than two live neighbours dies,
                 // as if caused by under-population.
                 if (count < 2 && game.getLife(x, y) === LIFE.ALIVE) {
-                    game.setColor(x, y, COLOR.BLANK)
-                    nextLivesState[COLS * y + x] = LIFE.DEAD
+                    game.setNextStateColor(x, y, COLOR.BLANK)
+                    game.setNextStateLife(x, y, LIFE.DEAD)
                 }
 
                 // Any live cell with two or three live neighbours lives on to the next generation.
                 if ((count === 2 || count === 3) &&
                 game.getLife(x, y) === LIFE.ALIVE) {
-                    nextLivesState[COLS * y + x] = LIFE.ALIVE
+                    game.setNextStateColor(x, y, game.getColor(x, y))
+                    game.setNextStateLife(x, y, LIFE.ALIVE)
                 }
 
                 // Any live cell with more than three live neighbours dies, as if by overcrowding.
                 if (count > 3 && game.getLife(x, y) === LIFE.ALIVE) {
-                    game.setColor(x, y, COLOR.BLANK)
-                    nextLivesState[COLS * y + x] = LIFE.DEAD
+                    game.setNextStateColor(x, y, COLOR.BLANK)
+                    game.setNextStateLife(x, y, LIFE.DEAD)
                 }
 
-                // Any LIFE.DEAD cell with exactly three live neighbours becomes a live cell,
+                // Any dead cell with exactly three live neighbours becomes a live cell,
                 // as if by reproduction.
                 if (count === 3 && game.getLife(x, y) === LIFE.DEAD) {
-                    game.setColor(x, y, -23523356)
-                    nextLivesState[COLS * y + x] = LIFE.ALIVE
+                    game.setNextStateColor(x, y, averageColor(colors))
+                    game.setNextStateLife(x, y, LIFE.ALIVE)
                 }
             }
         }
 
-        game.setLives(nextLivesState)
+        game.goToNextState()
 
         primus.forEach(spark => spark.emit(GAME_EVENT.STATE, game.getColors()))
 
@@ -255,19 +282,53 @@ function rgbaToInteger(rgba) {
 }
 
 /**
- * Returns rgba array for the integer color
+ * Returns rgba for the integer color
  *
  * @param {Number} color - integer color of the cell
- * @returns {Number[]} - array of r,g,b,a values
+ * @returns {Object} - object containing r,g,b,a values
  */
-function integerToRgbaArray(color) {
+function integerToRgba(color) {
     const r = color & 0xff
     const g = (color >> 8) & 0xff
     const b = (color >> 16) & 0xff
     const a = ((color >> 24) & 0xff) / 255
-    return [r, g, b, a]
+    return { r, g, b, a }
 }
 
+
+/**
+ * Returns average color of input colors
+ * Takes into account logarithmic scale of brightness
+ * https://www.youtube.com/watch?v=LKnqECcg6Gw
+ *
+ * @param {Number[]} colors - array of integer color values
+ * @return {Number} - average color value as an integer
+ */
+function averageColor(colors) {
+    const rgbaColors = colors.map(integerToRgba)
+
+    let sumR = 0
+    let sumG = 0
+    let sumB = 0
+    let sumA = 0
+
+    for (let i = 0; i < rgbaColors.length; i++) {
+        sumR += rgbaColors[i].r ** 2
+        sumG += rgbaColors[i].g ** 2
+        sumB += rgbaColors[i].b ** 2
+        sumA += rgbaColors[i].a
+    }
+
+    const r = Math.sqrt(sumR / rgbaColors.length)
+    const g = Math.sqrt(sumG / rgbaColors.length)
+    const b = Math.sqrt(sumB / rgbaColors.length)
+    const a = (sumA / rgbaColors.length) * 255
+
+    return (a << 24) |
+        (b << 16) |
+        (g << 8) |
+        r
+}
 
 /**
  * Returns number of live neighbors for a given cell and colors of alive neighbors
@@ -289,56 +350,56 @@ function countNeighbors(x, y) {
     nx = x - 1 < 0 ? COLS - 1 : x - 1
     count += game.getLife(nx, ny)
     if (game.getLife(nx, ny) === LIFE.ALIVE) {
-        colors.push(game.getColor(x, y))
+        colors.push(game.getColor(nx, ny))
     }
 
     // North neighbor
     nx = x
     count += game.getLife(nx, ny)
     if (game.getLife(nx, ny) === LIFE.ALIVE) {
-        colors.push(game.getColor(x, y))
+        colors.push(game.getColor(nx, ny))
     }
 
     // NorthEast neighbor
     nx = x + 1 === COLS ? 0 : x + 1
     count += game.getLife(nx, ny)
     if (game.getLife(nx, ny) === LIFE.ALIVE) {
-        colors.push(game.getColor(x, y))
+        colors.push(game.getColor(nx, ny))
     }
 
     // East neighbor
     ny = y
     count += game.getLife(nx, ny)
     if (game.getLife(nx, ny) === LIFE.ALIVE) {
-        colors.push(game.getColor(x, y))
+        colors.push(game.getColor(nx, ny))
     }
 
     // West neighbor
     nx = x - 1 < 0 ? COLS - 1 : x - 1
     count += game.getLife(nx, ny)
     if (game.getLife(nx, ny) === LIFE.ALIVE) {
-        colors.push(game.getColor(x, y))
+        colors.push(game.getColor(nx, ny))
     }
 
     // SouthWest neighbor
     ny = y + 1 === ROWS ? 0 : y + 1
     count += game.getLife(nx, ny)
     if (game.getLife(nx, ny) === LIFE.ALIVE) {
-        colors.push(game.getColor(x, y))
+        colors.push(game.getColor(nx, ny))
     }
 
     // South neighbor
     nx = x
     count += game.getLife(nx, ny)
     if (game.getLife(nx, ny) === LIFE.ALIVE) {
-        colors.push(game.getColor(x, y))
+        colors.push(game.getColor(nx, ny))
     }
 
     // SouthEast neighbor
     nx = x + 1 === COLS ? 0 : x + 1
     count += game.getLife(nx, ny)
     if (game.getLife(nx, ny) === LIFE.ALIVE) {
-        colors.push(game.getColor(x, y))
+        colors.push(game.getColor(nx, ny))
     }
 
     return { count, colors }
