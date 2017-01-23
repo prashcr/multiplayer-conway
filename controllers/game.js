@@ -39,6 +39,11 @@ const GAME_EVENT = {
     PLAYER_CLICK: 'game::player::click',
 }
 
+const GAME_TICK_INTERVAL = {
+    DEFAULT: 1000,
+    AFTER_CLICK: 2500,
+}
+
 /**
  * Game factory to encapsulate game state and its operations
  *
@@ -122,6 +127,9 @@ const Game = function Game() {
 
 const game = Game()
 
+// Stores current gameTick() timeoutId
+let gameTickTimeoutId
+
 module.exports = (primus) => {
     /**
      * When a new connection is received
@@ -145,20 +153,29 @@ module.exports = (primus) => {
 
     /**
      * When player clicks the canvas
+     * Resets gameTick timeout to avoid interrupting player while they are clicking cells
+     * If the clicked cell is dead, makes it alive and gives it the player's color
      *
      * @param {Number} color - player's color
      * @param {Number} x - x-coordinate of cell
      * @param {Number} y - y-coordinate of cell
      */
     function playerClick(color, { x, y }) {
-        game.setColor(x, y, color)
-        game.setLife(x, y, LIFE.ALIVE)
+        clearTimeout(gameTickTimeoutId)
+        gameTickTimeoutId = setTimeout(gameTick, GAME_TICK_INTERVAL.AFTER_CLICK)
 
-        primus.forEach(spark => spark.emit(GAME_EVENT.STATE, game.getColors()))
+        if (game.getLife(x, y) === LIFE.DEAD) {
+            game.setColor(x, y, color)
+            game.setLife(x, y, LIFE.ALIVE)
+
+            primus.forEach(spark => spark.emit(GAME_EVENT.STATE, game.getColors()))
+        }
     }
 
     /**
      * Runs Game of Life algorithm every X milliseconds
+     * Uses setTimeout to allow for dynamic interval logic
+     * e.g. pending timeout is reset and longer interval is applied when a player clicks on the game
      */
     function gameTick() {
         const nextLivesState = new Array(COLS * ROWS).fill(LIFE.DEAD)
@@ -199,7 +216,7 @@ module.exports = (primus) => {
 
         primus.forEach(spark => spark.emit(GAME_EVENT.STATE, game.getColors()))
 
-        setTimeout(gameTick, 1000)
+        gameTickTimeoutId = setTimeout(gameTick, GAME_TICK_INTERVAL.DEFAULT)
     }
 
     gameTick()
