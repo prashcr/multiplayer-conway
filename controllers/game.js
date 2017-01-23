@@ -161,7 +161,6 @@ module.exports = (primus) => {
      * Runs Game of Life algorithm every X milliseconds
      */
     function gameTick() {
-        console.log('game tick')
         const nextLivesState = new Array(COLS * ROWS).fill(LIFE.DEAD)
 
         for (let y = 0; y < ROWS; y++) {
@@ -221,6 +220,7 @@ function error(err) {
 /**
  * Returns a color, which is a 32 bit signed integer
  * Each of the 4 bytes represents r, g, b, a in little-endian byte order
+ * Based on how Canvas API operates on pixel values
  *
  * @param {String} rgba - CSS color of the cell either in rgb or rgba format
  * @returns {Number} - integer color of the cell
@@ -238,24 +238,28 @@ function rgbaToInteger(rgba) {
 }
 
 /**
- * Returns rgba CSS string for the integer color
- * Where each of the 4 bytes represents r, g, b, a in little-endian byte order
- * Based on how Canvas API operates on pixel values
+ * Returns rgba array for the integer color
  *
  * @param {Number} color - integer color of the cell
- * @returns {String} - CSS color in rgba format
+ * @returns {Number[]} - array of r,g,b,a values
  */
-function integerToRgba(color) {
+function integerToRgbaArray(color) {
     const r = color & 0xff
     const g = (color >> 8) & 0xff
     const b = (color >> 16) & 0xff
     const a = ((color >> 24) & 0xff) / 255
-    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')'
+    return [r, g, b, a]
 }
+
 
 /**
  * Returns number of live neighbors for a given cell and colors of alive neighbors
- * The world is toriodal (edges wrap around)
+ * There's some indexing arithmetic to make the world toroidal (opposite edges are connected)
+ *
+ * @param {Number} x - x-coordinate
+ * @param {Number} y - y-coordinate
+ * @return {Number} count - number of alive neighbors
+ * @return {Number[]} colors - colors of all live neighbors
  */
 function countNeighbors(x, y) {
     const colors = []
