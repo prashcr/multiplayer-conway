@@ -64,7 +64,7 @@
      */
     function drawWorld(cells) {
         ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-        ctx.fillStyle = 'rgba(128, 128, 128, 0.15)'
+        ctx.fillStyle = 'rgba(128, 128, 128, 0.12)'
         ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
         for (let y = 0; y < ROWS; y++) {
