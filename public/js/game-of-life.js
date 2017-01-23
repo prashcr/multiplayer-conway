@@ -4,7 +4,7 @@
 
 'use strict'
 
-/* global Primus */
+/* global Primus, notie */
 
 ;(() => {
     const canvas = document.getElementById('canvas')
@@ -17,6 +17,9 @@
     const COLS = (CANVAS_WIDTH - CELL_SPACE) / CELL_SIZE // 150
     const ROWS = (CANVAS_HEIGHT - CELL_SPACE) / CELL_SIZE // 100
     const primus = new Primus()
+
+    let playerColor
+    let disconnected = true
 
     const GAME_EVENT = {
         STATE: 'game::state',
@@ -37,8 +40,24 @@
          */
         primus.on('open', () => {
             console.log('Connected to server')
+            disconnected = false
             canvas.addEventListener('click', handleCanvasClick)
             document.getElementById('patterns').addEventListener('click', handlePatternClick)
+        })
+
+        /**
+         * When connection is lost
+         */
+        primus.on('close', () => {
+            disconnected = true
+            notie.alert('error', 'Disconnected from server.', 1.5)
+        })
+
+        /**
+         * When connection is regained
+         */
+        primus.on('reconnected', () => {
+            notie.alert('success', 'Reconnected to server', 1.5)
         })
 
         /**
@@ -56,6 +75,7 @@
             console.log('Recieved player color from server')
             console.log(color)
             console.log('%c    ', `background: ${color}`)
+            playerColor = color
         })
 
         /**
@@ -70,16 +90,16 @@
      * Draws the world by iterating through each cell
      * Sets a light grey background which in tandem with cell spacing forms a grid
      *
-     * @param {Number[]} cells - COLS * ROWS array of integer colors
+     * @param {Number[]} colors - COLS * ROWS array of integer colors
      */
-    function drawWorld(cells) {
+    function drawWorld(colors) {
         ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
         ctx.fillStyle = 'rgba(128, 128, 128, 0.12)'
         ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
         for (let y = 0; y < ROWS; y++) {
             for (let x = 0; x < COLS; x++) {
-                drawCell(x, y, cells[COLS * y + x])
+                drawCell(x, y, colors[COLS * y + x])
             }
         }
     }
@@ -134,6 +154,17 @@
         y = Math.floor(y / CELL_SIZE)
 
         primus.emit(GAME_EVENT.PLAYER_CLICK, { x, y })
+
+        // Optimistically draw clicked cell if the client is disconnected
+        if (disconnected) {
+            ctx.fillStyle = playerColor
+
+            ctx.fillRect(
+                x * CELL_SIZE + CELL_SPACE,
+                y * CELL_SIZE + CELL_SPACE,
+                CELL_WIDTH,
+                CELL_WIDTH)
+        }
     }
 
     /**
