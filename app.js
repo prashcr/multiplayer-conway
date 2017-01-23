@@ -52,6 +52,7 @@ app.get('/', homeController.index)
  * Primus listeners
  */
 primus.on('connection', gameController.connection)
+primus.on('disconnection', gameController.disconnection)
 primus.on('error', gameController.error)
 
 /**

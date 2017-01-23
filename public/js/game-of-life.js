@@ -20,9 +20,10 @@
 
     const GAME_EVENT = {
         STATE: 'game::state',
-        PLAYER_COLOR: 'game::player::color',
-        PLAYER_CLICK: 'game::player::click',
-        PLAYER_PATTERN: 'game::player::pattern',
+        PLAYER_COLOR: 'game::player_color',
+        PLAYER_CLICK: 'game::player_click',
+        PLAYER_PATTERN: 'game::player_pattern',
+        PLAYERS_ONLINE: 'game::players_online',
     }
 
     document.addEventListener('DOMContentLoaded', init)
@@ -44,7 +45,7 @@
          * When new game state is received from the server
          */
         primus.on(GAME_EVENT.STATE, (gameState) => {
-            console.log(`Received new game state from server at ${new Date()}`)
+            // console.log(`Received new game state from server at ${new Date()}`)
             drawWorld(gameState)
         })
 
@@ -55,6 +56,13 @@
             console.log('Recieved player color from server')
             console.log(color)
             console.log('%c    ', `background: ${color}`)
+        })
+
+        /**
+         * When players online is received from the server
+         */
+        primus.on(GAME_EVENT.PLAYERS_ONLINE, (playersOnline) => {
+            document.getElementById('players-online').innerText = playersOnline
         })
     }
 

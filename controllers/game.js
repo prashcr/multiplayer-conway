@@ -30,9 +30,10 @@ const COLOR = {
 
 const GAME_EVENT = {
     STATE: 'game::state',
-    PLAYER_COLOR: 'game::player::color',
-    PLAYER_CLICK: 'game::player::click',
-    PLAYER_PATTERN: 'game::player::pattern',
+    PLAYER_COLOR: 'game::player_color',
+    PLAYER_CLICK: 'game::player_click',
+    PLAYER_PATTERN: 'game::player_pattern',
+    PLAYERS_ONLINE: 'game::players_online',
 }
 
 const GAME_TICK_INTERVAL = {
@@ -138,6 +139,8 @@ const game = new Game()
 // Stores current gameTick() timeoutId
 let gameTickTimeoutId
 
+let playersOnline = 0
+
 module.exports = (primus) => {
     /**
      * When a new connection is received
@@ -156,8 +159,19 @@ module.exports = (primus) => {
         spark.emit(GAME_EVENT.PLAYER_COLOR, req.session.color)
         spark.emit(GAME_EVENT.STATE, game.colors)
 
+        playersOnline++
+        primus.forEach(eachSpark => eachSpark.emit(GAME_EVENT.PLAYERS_ONLINE, playersOnline))
+
         spark.on(GAME_EVENT.PLAYER_CLICK, playerClick.bind(null, color))
         spark.on(GAME_EVENT.PLAYER_PATTERN, playerPattern.bind(null, color))
+    }
+
+    /**
+     * When a player disconnects
+     */
+    function disconnection() {
+        playersOnline--
+        primus.forEach(spark => spark.emit(GAME_EVENT.PLAYERS_ONLINE, playersOnline))
     }
 
     /**
@@ -247,6 +261,7 @@ module.exports = (primus) => {
 
     return {
         connection,
+        disconnection,
         error,
     }
 }
