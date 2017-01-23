@@ -28,11 +28,6 @@ const COLOR = {
     BLANK: -1, // white
 }
 
-const LIFE = {
-    ALIVE: 1,
-    DEAD: 0,
-}
-
 const GAME_EVENT = {
     STATE: 'game::state',
     PLAYER_COLOR: 'game::player::color',
@@ -51,12 +46,12 @@ class Game {
     constructor() {
         // integer color values for each cell
         this.colors = new Array(COLS * ROWS).fill(COLOR.BLANK)
-        // stores whether cell is alive or dead for each cell
-        this.lives = new Array(COLS * ROWS).fill(LIFE.DEAD)
+        // stores whether cell is alive for each cell
+        this.lives = new Array(COLS * ROWS).fill(false)
         // colors data for next state
         this.nextStateColors = new Array(COLS * ROWS).fill(COLOR.BLANK)
         // lives data for next state
-        this.nextStateLives = new Array(COLS * ROWS).fill(LIFE.DEAD)
+        this.nextStateLives = new Array(COLS * ROWS).fill(false)
     }
 
     /**
@@ -97,7 +92,7 @@ class Game {
      *
      * @param {Number} x - x-coordinate of cell
      * @param {Number} y - y-coordinate of cell
-     * @returns {Number} - life value of cell
+     * @returns {Boolean} - true if cell is alive, otherwise false
      */
     getLife(x, y) {
         return this.lives[COLS * y + x]
@@ -108,7 +103,7 @@ class Game {
      *
      * @param {Number} x - x-coordinate of cell
      * @param {Number} y - y-coordinate of cell
-     * @param {Number} life - life value of cell
+     * @param {Boolean} life - true if cell is alive, otherwise false
      */
     setLife(x, y, life) {
         this.lives[COLS * y + x] = life
@@ -119,7 +114,7 @@ class Game {
      *
      * @param {Number} x - x-coordinate of cell
      * @param {Number} y - y-coordinate of cell
-     * @param {Number} life - life value of cell
+     * @param {Boolean} life - true if cell is alive, otherwise false
      */
     setNextStateLife(x, y, life) {
         this.nextStateLives[COLS * y + x] = life
@@ -133,7 +128,7 @@ class Game {
         this.colors = this.nextStateColors
         this.lives = this.nextStateLives
         this.nextStateColors = new Array(COLS * ROWS).fill(COLOR.BLANK)
-        this.nextStateLives = new Array(COLS * ROWS).fill(LIFE.DEAD)
+        this.nextStateLives = new Array(COLS * ROWS).fill(false)
     }
 }
 
@@ -176,9 +171,9 @@ module.exports = (primus) => {
         clearTimeout(gameTickTimeoutId)
         gameTickTimeoutId = setTimeout(gameTick, GAME_TICK_INTERVAL.AFTER_CLICK)
 
-        if (game.getLife(x, y) === LIFE.DEAD) {
+        if (game.getLife(x, y) === false) {
             game.setColor(x, y, color)
-            game.setLife(x, y, LIFE.ALIVE)
+            game.setLife(x, y, true)
 
             primus.forEach(spark => spark.emit(GAME_EVENT.STATE, game.colors))
         }
@@ -196,29 +191,29 @@ module.exports = (primus) => {
 
                 // Any live cell with fewer than two live neighbours dies,
                 // as if caused by under-population.
-                if (count < 2 && game.getLife(x, y) === LIFE.ALIVE) {
+                if (count < 2 && game.getLife(x, y)) {
                     game.setNextStateColor(x, y, COLOR.BLANK)
-                    game.setNextStateLife(x, y, LIFE.DEAD)
+                    game.setNextStateLife(x, y, false)
                 }
 
                 // Any live cell with two or three live neighbours lives on to the next generation.
                 if ((count === 2 || count === 3) &&
-                game.getLife(x, y) === LIFE.ALIVE) {
+                game.getLife(x, y)) {
                     game.setNextStateColor(x, y, game.getColor(x, y))
-                    game.setNextStateLife(x, y, LIFE.ALIVE)
+                    game.setNextStateLife(x, y, true)
                 }
 
                 // Any live cell with more than three live neighbours dies, as if by overcrowding.
-                if (count > 3 && game.getLife(x, y) === LIFE.ALIVE) {
+                if (count > 3 && game.getLife(x, y)) {
                     game.setNextStateColor(x, y, COLOR.BLANK)
-                    game.setNextStateLife(x, y, LIFE.DEAD)
+                    game.setNextStateLife(x, y, false)
                 }
 
                 // Any dead cell with exactly three live neighbours becomes a live cell,
                 // as if by reproduction.
-                if (count === 3 && game.getLife(x, y) === LIFE.DEAD) {
+                if (count === 3 && game.getLife(x, y) === false) {
                     game.setNextStateColor(x, y, averageColor(colors))
-                    game.setNextStateLife(x, y, LIFE.ALIVE)
+                    game.setNextStateLife(x, y, true)
                 }
             }
         }
@@ -332,57 +327,57 @@ function countNeighbors(x, y) {
     // NorthWest neighbor
     ny = y - 1 < 0 ? ROWS - 1 : y - 1
     nx = x - 1 < 0 ? COLS - 1 : x - 1
-    count += game.getLife(nx, ny)
-    if (game.getLife(nx, ny) === LIFE.ALIVE) {
+    if (game.getLife(nx, ny)) {
+        count++
         colors.push(game.getColor(nx, ny))
     }
 
     // North neighbor
     nx = x
-    count += game.getLife(nx, ny)
-    if (game.getLife(nx, ny) === LIFE.ALIVE) {
+    if (game.getLife(nx, ny)) {
+        count++
         colors.push(game.getColor(nx, ny))
     }
 
     // NorthEast neighbor
     nx = x + 1 === COLS ? 0 : x + 1
-    count += game.getLife(nx, ny)
-    if (game.getLife(nx, ny) === LIFE.ALIVE) {
+    if (game.getLife(nx, ny)) {
+        count++
         colors.push(game.getColor(nx, ny))
     }
 
     // East neighbor
     ny = y
-    count += game.getLife(nx, ny)
-    if (game.getLife(nx, ny) === LIFE.ALIVE) {
+    if (game.getLife(nx, ny)) {
+        count++
         colors.push(game.getColor(nx, ny))
     }
 
     // West neighbor
     nx = x - 1 < 0 ? COLS - 1 : x - 1
-    count += game.getLife(nx, ny)
-    if (game.getLife(nx, ny) === LIFE.ALIVE) {
+    if (game.getLife(nx, ny)) {
+        count++
         colors.push(game.getColor(nx, ny))
     }
 
     // SouthWest neighbor
     ny = y + 1 === ROWS ? 0 : y + 1
-    count += game.getLife(nx, ny)
-    if (game.getLife(nx, ny) === LIFE.ALIVE) {
+    if (game.getLife(nx, ny)) {
+        count++
         colors.push(game.getColor(nx, ny))
     }
 
     // South neighbor
     nx = x
-    count += game.getLife(nx, ny)
-    if (game.getLife(nx, ny) === LIFE.ALIVE) {
+    if (game.getLife(nx, ny)) {
+        count++
         colors.push(game.getColor(nx, ny))
     }
 
     // SouthEast neighbor
     nx = x + 1 === COLS ? 0 : x + 1
-    count += game.getLife(nx, ny)
-    if (game.getLife(nx, ny) === LIFE.ALIVE) {
+    if (game.getLife(nx, ny)) {
+        count++
         colors.push(game.getColor(nx, ny))
     }
 
